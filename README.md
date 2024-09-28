@@ -11,7 +11,7 @@ docker run --name course-gpt-redis -d \
   redis-server --maxmemory-policy noeviction
 ```
 
-To connect to the instance use `redis-cli -h localhost 6379`
+To connect to the instance use `redis-cli`
 
 # Setting up auth locally
 
