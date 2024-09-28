@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { Button } from "@mui/material"
+import AuthButton from "@/components/AuthButton";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <Button variant="contained">
         Hello world
       </Button>
+      <AuthButton />
     </>
   );
 }
