@@ -38,3 +38,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Setting up auth locally
+
+1. Generate secret in .env file with `npx auth secret`.
+2. Create a [new Google Cloud project](https://developers.google.com/workspace/guides/create-project).
+3. Create an external [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent). Fill out only the required info, keep clicking Next.
+4. On the [Credentials page](https://console.cloud.google.com/apis/credentials), click "Create credentials" and select "OAuth client ID".
+5. Select "Web application" for Application type.
+6. Enter the following information:
+
+|                               | For development                                  | For production                                   |
+| ----------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| Authorized JavaScript origins | `http://localhost:3000`                          | `https://{YOUR_DOMAIN}`                          |
+| Authorized redirect URIs      | `http://localhost:3000/api/auth/callback/google` | `https://{YOUR_DOMAIN}/api/auth/callback/google` |
+
+7. Update your `.env` file with the Google Client ID and Client secret shown in the "OAuth client created" dialog.
