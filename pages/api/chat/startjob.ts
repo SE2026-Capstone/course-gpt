@@ -1,17 +1,10 @@
 
 import { z, ZodError } from "zod"
-import { Queue } from "bullmq"
-import { Redis } from "ioredis"
-import { CHAT_JOB_QUEUE_NAME } from "@/globals"
 import { NextApiRequest, NextApiResponse } from "next"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]"
+import { chatJobQueue } from "@/bullmq/bullmq"
 
-const redisConnection = new Redis(process.env.REDIS_URL!, {
-	maxRetriesPerRequest: null,
-})
-
-const chatJobQueue = new Queue(CHAT_JOB_QUEUE_NAME, { connection: redisConnection })
 
 
 const ChatJobRequest = z.object({
@@ -38,7 +31,10 @@ const handler = (async (
 
 
 		const parsedBody = ChatJobRequest.parse(req.body)
-		const chatJob = await chatJobQueue.add("chat", {us: session.user?.email, chat: parsedBody.chat})
+		const chatJob = await chatJobQueue.add("chat", {
+			user_email: session.user?.email,
+			chat: parsedBody.chat
+		})
 		return res.status(200).json({id: chatJob.id})
 		
 	} catch (error: unknown) {
