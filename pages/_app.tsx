@@ -4,6 +4,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Roboto } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 
+import "@/styles/globals.css";
+
 const roboto = Roboto({
   weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
@@ -19,12 +21,22 @@ const theme = createTheme({
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider theme={theme}>
-      <SessionProvider>
-        <main className={roboto.variable}>
-          <Component {...pageProps} />
-        </main>
-      </SessionProvider>
-    </ThemeProvider>
+    <>
+      {/* Hack for MUI fonts since we're using Pages router */}
+      <style global jsx>
+        {`
+          html {
+            font-family: ${roboto.style.fontFamily};
+          }
+        `}
+      </style>
+      <ThemeProvider theme={theme}>
+        <SessionProvider>
+          <main>
+            <Component {...pageProps} />
+          </main>
+        </SessionProvider>
+      </ThemeProvider>
+    </>
   );
 }
