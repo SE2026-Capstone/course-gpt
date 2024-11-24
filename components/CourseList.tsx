@@ -51,7 +51,7 @@ export default function CourseList() {
       >
         {courses.map((course) => {
           return (
-            <Box borderRadius="1rem" bgcolor="grey.200" padding="1rem">
+            <Box key={course.name} borderRadius="1rem" bgcolor="grey.200" padding="1rem">
               <Box display="flex" mb="1rem">
                 <Box flexGrow={1}>
                   <Typography variant="h6">{course.name}</Typography>

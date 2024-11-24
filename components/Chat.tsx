@@ -1,5 +1,6 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Input, TextField, Typography } from "@mui/material";
 import { useSession } from "next-auth/react";
+import { FormEvent, useState } from "react";
 
 type Message = {
   role: "user" | "system";
@@ -22,9 +23,51 @@ const dummyMessages: Message[] = [
 ];
 
 export default function Chat() {
-  const messages = dummyMessages;
+  const [messages, setMessages] = useState(dummyMessages);
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
+
+  const addMessage = (msg: Message) => {
+    setMessages((msgs) => [...msgs, msg])
+  }
+
+  const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    addMessage({
+      role: "user",
+      content: query,
+    })
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const response = (await res.json()).response as string;
+      addMessage({
+        role: "system",
+        content: response
+      });
+    
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box width="100%" textAlign="center">
       <Typography my="1rem" variant="h4">
@@ -70,6 +113,12 @@ export default function Chat() {
             </Box>
           );
         })}
+        {/* TODO: make it look good */}
+        <form onSubmit={handleSubmit}>
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Button type="submit" >Send</Button>
+          {isLoading && <p>Loading...</p>}
+        </form>
       </Box>
     </Box>
   );
