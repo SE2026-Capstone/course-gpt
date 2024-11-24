@@ -25,7 +25,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (job.data.user_email !== session.user?.email) {
       return res.status(403).json({ error: "Job does not belong to the requester" })
     }
-    return res.status(200).json({ status: await job.isCompleted() })
+    
+    // if the job is completed, return the data
+    let returnData: {
+      data?: string,
+      completed: boolean
+    } = {completed: false}
+    
+    if (await job.isCompleted()) {
+      returnData.data = job.data
+      returnData.completed = true
+    }
+    return res.status(200).json(returnData)
+
   } catch (error) {
     return res.status(500).json({ error: "Internal server error" })
   }
