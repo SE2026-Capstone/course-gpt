@@ -1,9 +1,11 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Input, TextField, Typography } from "@mui/material";
 import { useSession } from "next-auth/react";
+import { FormEvent, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "system";
   content: string;
+  date?: Date;
 };
 
 const dummyMessages: Message[] = [
@@ -21,10 +23,77 @@ const dummyMessages: Message[] = [
   },
 ];
 
+
 export default function Chat() {
-  const messages = dummyMessages;
+  const [messages, setMessages] = useState(dummyMessages);
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
+
+  const addMessage = (msg: Message) => {
+    setMessages((msgs) => [...msgs, msg])
+  }
+
+  const [query, setQuery] = useState('');
+  const [isLoading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    addMessage({
+      role: "user",
+      content: query,
+    })
+
+    setLoading(true);
+
+    try {
+      // TODO: 401 unauthorized
+      console.log((session as any).token)
+      const res = await fetch('/api/chat/startjob', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${(session as any).token}`
+        },
+        body: JSON.stringify({ chat: query, email: session?.user?.email }),
+      });
+
+      if (!res.ok) {
+        setLoading(false);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const { id } = await res.json()
+
+      const interval = window.setInterval(async () => {
+        const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
+          method: 'GET',
+        })
+        if (!res.ok) {
+          setLoading(false);
+          console.error("Stopped polling")
+          window.clearInterval(interval)
+          return
+        }
+
+        const { data, completed } = await pollRes.json()
+        if (completed) {
+          addMessage({
+            role: "system",
+            content: data,
+          })
+          setLoading(false);
+          // clear interval and return
+          window.clearInterval(interval)
+          return
+        }
+      }, 1000)
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   return (
     <Box width="100%" textAlign="center">
       <Typography my="1rem" variant="h4">
@@ -70,6 +139,12 @@ export default function Chat() {
             </Box>
           );
         })}
+        {/* TODO: make it look good */}
+        <form onSubmit={handleSubmit}>
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} />
+          <Button type="submit" disabled={isLoading}>Send</Button>
+        </form>
+
       </Box>
     </Box>
   );
