@@ -1,10 +1,11 @@
 import { Box, Button, Input, TextField, Typography } from "@mui/material";
 import { useSession } from "next-auth/react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "system";
   content: string;
+  date?: Date;
 };
 
 const dummyMessages: Message[] = [
@@ -22,6 +23,7 @@ const dummyMessages: Message[] = [
   },
 ];
 
+
 export default function Chat() {
   const [messages, setMessages] = useState(dummyMessages);
   const { data: session } = useSession();
@@ -32,7 +34,7 @@ export default function Chat() {
   }
 
   const [query, setQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,29 +44,53 @@ export default function Chat() {
       content: query,
     })
 
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      const res = await fetch('/api/chatbot', {
+      // TODO: 401 unauthorized
+      console.log((session as any).token)
+      const res = await fetch('/api/chat/startjob', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${(session as any).token}`
+        },
+        body: JSON.stringify({ chat: query, email: session?.user?.email }),
       });
 
       if (!res.ok) {
+        setLoading(false);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const response = (await res.json()).response as string;
-      addMessage({
-        role: "system",
-        content: response
-      });
-    
+      const { id } = await res.json()
+
+      const interval = window.setInterval(async () => {
+        const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
+          method: 'GET',
+        })
+        if (!res.ok) {
+          setLoading(false);
+          console.error("Stopped polling")
+          window.clearInterval(interval)
+          return
+        }
+
+        const { data, completed } = await pollRes.json()
+        if (completed) {
+          addMessage({
+            role: "system",
+            content: data,
+          })
+          setLoading(false);
+          // clear interval and return
+          window.clearInterval(interval)
+          return
+        }
+      }, 1000)
+
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -116,9 +142,9 @@ export default function Chat() {
         {/* TODO: make it look good */}
         <form onSubmit={handleSubmit}>
           <Input value={query} onChange={(e) => setQuery(e.target.value)} />
-          <Button type="submit" >Send</Button>
-          {isLoading && <p>Loading...</p>}
+          <Button type="submit" disabled={isLoading}>Send</Button>
         </form>
+
       </Box>
     </Box>
   );

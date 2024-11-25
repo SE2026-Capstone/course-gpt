@@ -6,10 +6,10 @@ import { chatJobQueue } from "@/bullmq/bullmq";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const session = await getServerSession(req, res, authOptions)
-    if (!session) {
-      return res.status(401).json({ error: "Unauthorized" })
-    }
+    // const session = await getServerSession(req, res, authOptions)
+    // if (!session) {
+    //   return res.status(401).json({ error: "Unauthorized" })
+    // }
     if (req.method !== "GET") {
       return res.status(405).json({ error: "Method not allowed" })
     }
@@ -22,18 +22,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (!job) {
       return res.status(400).json({ error: "Invalid job_id" })
     }
-    if (job.data.user_email !== session.user?.email) {
-      return res.status(403).json({ error: "Job does not belong to the requester" })
-    }
+    // if (job.data.user_email !== session.user?.email) {
+    //   return res.status(403).json({ error: "Job does not belong to the requester" })
+    // }
     
     // if the job is completed, return the data
     let returnData: {
       data?: string,
       completed: boolean
     } = {completed: false}
-    
+
     if (await job.isCompleted()) {
-      returnData.data = job.data
+      returnData.data = job.returnvalue
       returnData.completed = true
     }
     return res.status(200).json(returnData)
