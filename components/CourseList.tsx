@@ -40,6 +40,7 @@ export default function CourseList() {
         Courses
       </Typography>
       <Box
+        boxSizing="border-box"
         overflow="scroll"
         border="2px solid #D6D6D6"
         borderRadius="16px"

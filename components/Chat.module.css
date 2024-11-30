@@ -4,6 +4,7 @@
     border-radius: 1rem;
     padding: 0.5rem;
     font-family: var(--font-roboto), sans-serif;
+    font-size: 1rem;
     resize: none;
     width: 20rem;
 }

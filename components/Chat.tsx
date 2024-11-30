@@ -105,6 +105,7 @@ export default function Chat() {
         Chat
       </Typography>
       <Box
+        boxSizing="border-box"
         border="2px solid #D6D6D6"
         borderRadius="16px"
         height="80vh"
