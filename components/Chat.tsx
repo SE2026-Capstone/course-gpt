@@ -1,10 +1,7 @@
 import {
   Box,
-  Button,
   CircularProgress,
   IconButton,
-  Input,
-  TextField,
   Typography,
 } from "@mui/material";
 import { useSession } from "next-auth/react";
@@ -12,6 +9,7 @@ import React, { useEffect, useId } from "react";
 import { FormEvent, useRef, useState } from "react";
 import styles from "./Chat.module.css";
 import SendIcon from "@mui/icons-material/Send";
+import { useNotifications } from "@toolpad/core/useNotifications";
 
 type Message = {
   role: "user" | "system";
@@ -43,6 +41,8 @@ export default function Chat() {
   const [query, setQuery] = useState("");
   const [isLoading, setLoading] = useState(false);
 
+  const notifications = useNotifications();
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setQuery("");
@@ -67,8 +67,7 @@ export default function Chat() {
       });
 
       if (!res.ok) {
-        setLoading(false);
-        throw new Error(`HTTP error! status: ${res.status}`);
+        throw new Error(`sending message: HTTP ${res.status}`);
       }
 
       const { id } = await res.json();
@@ -78,10 +77,8 @@ export default function Chat() {
           method: "GET",
         });
         if (!res.ok) {
-          setLoading(false);
-          console.error("Stopped polling");
           window.clearInterval(interval);
-          return;
+          throw new Error(`receiving reply: HTTP ${res.status}`);
         }
 
         const { data, completed } = await pollRes.json();
@@ -90,14 +87,15 @@ export default function Chat() {
             role: "system",
             content: data,
           });
-          setLoading(false);
-          // clear interval and return
           window.clearInterval(interval);
           return;
         }
       }, 1000);
     } catch (error) {
-      console.error("Error:", error);
+      const message = (error as any)?.message || "Unknown error";
+      notifications.show(`Something went wrong, please try again. Error: ${message}`)
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,8 +125,8 @@ export default function Chat() {
               <ChatBubble message={message} userPFP={pfp} />
             </React.Fragment>
           ))}
+          {isLoading && <ChatSystemLoadingBubble />}
         </Box>
-        {isLoading && <ChatSystemLoadingBubble />}
         <ChatInput
           handleSubmit={handleSubmit}
           value={query}

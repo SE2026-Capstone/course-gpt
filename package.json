@@ -19,6 +19,7 @@
     "@mui/material": "^6.1.1",
     "@mui/material-nextjs": "^6.1.1",
     "@mui/styled-engine-sc": "^6.1.1",
+    "@toolpad/core": "^0.10.0",
     "bullmq": "^5.13.0",
     "chromadb": "^1.8.1",
     "dotenv": "^16.4.5",
