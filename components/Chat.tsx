@@ -1,12 +1,7 @@
-import {
-  Box,
-  CircularProgress,
-  IconButton,
-  Typography,
-} from "@mui/material";
+import { Box, IconButton, Typography } from "@mui/material";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useId } from "react";
-import { FormEvent, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import styles from "./Chat.module.css";
 import SendIcon from "@mui/icons-material/Send";
 import { useNotifications } from "@toolpad/core/useNotifications";
@@ -27,6 +22,7 @@ export default function Chat() {
   ]);
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
+  const messageContainer = useRef<HTMLDivElement>(null);
 
   const addMessage = (msg: Message) => {
     setMessages((msgs) => [
@@ -38,20 +34,22 @@ export default function Chat() {
     ]);
   };
 
+  useEffect(() => {
+    if (!messageContainer.current) return;
+    messageContainer.current.scrollTop = messageContainer.current.scrollHeight;
+  }, [messages])
+
   const [query, setQuery] = useState("");
   const [isLoading, setLoading] = useState(false);
 
   const notifications = useNotifications();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setQuery("");
-
     addMessage({
       role: "user",
       content: query.trim(),
     });
-
     setLoading(true);
 
     try {
@@ -88,13 +86,15 @@ export default function Chat() {
             content: data,
           });
           window.clearInterval(interval);
+          setLoading(false);
           return;
         }
       }, 1000);
     } catch (error) {
       const message = (error as any)?.message || "Unknown error";
-      notifications.show(`Something went wrong, please try again. Error: ${message}`)
-    } finally {
+      notifications.show(
+        `Something went wrong, please try again. Error: ${message}`
+      );
       setLoading(false);
     }
   };
@@ -112,6 +112,7 @@ export default function Chat() {
         flexDirection="column"
       >
         <Box
+          ref={messageContainer}
           overflow="scroll"
           height="100%"
           display="flex"
@@ -139,7 +140,7 @@ export default function Chat() {
 }
 
 interface ChatInputProps {
-  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleSubmit: () => void;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   isLoading: boolean;
@@ -153,16 +154,28 @@ function ChatInput({
 }: ChatInputProps) {
   const formId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // scroll to top when new message
   useEffect(() => {
     if (!textareaRef.current) return;
     textareaRef.current.style.height = "auto";
     textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
   }, [value]);
+
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
       id={formId}
       style={{ margin: "auto", marginBottom: "1rem" }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          !isLoading && handleSubmit();
+        }
+      }}
     >
       <Box display="flex" alignItems="center" gap="0.5rem">
         <textarea
@@ -173,7 +186,6 @@ function ChatInput({
           className={styles.chatInput}
           form={formId}
         />
-
         <IconButton
           type="submit"
           disabled={isLoading || !value}
@@ -233,8 +245,12 @@ function ChatSystemLoadingBubble() {
         color="#383838"
         borderRadius="1rem 1rem 1rem 0"
         maxWidth="60%"
+        display="flex"
+        gap="5px"
       >
-        <CircularProgress size="1.5rem" />
+        <div className={styles.loadingDot} />
+        <div className={styles.loadingDot} />
+        <div className={styles.loadingDot} />
       </Box>
     </Box>
   );
