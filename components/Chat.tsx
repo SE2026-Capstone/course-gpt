@@ -1,59 +1,67 @@
-import { Box, Button, Input, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  Input,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useSession } from "next-auth/react";
+import React, { useEffect, useId } from "react";
 import { FormEvent, useRef, useState } from "react";
+import styles from "./Chat.module.css";
+import SendIcon from "@mui/icons-material/Send";
 
 type Message = {
   role: "user" | "system";
   content: string;
-  date?: Date;
+  date?: number; // Date.now()
 };
 
-const dummyMessages: Message[] = [
-  {
-    role: "system",
-    content: `Hi, I'm CourseGPT, course selection assistant. How can I help you today?`,
-  },
-  {
-    role: "user",
-    content: `I’m a 3rd year student studying Software Engineering. I’d like to learn more about AI. What courses can I take in 3B that are related to this topic?`,
-  },
-  {
-    role: "system",
-    content: `Sure, I’ve come up with a list of courses that are related to AI for 3rd/4th year students and I’ve listed them on the right. I’ve taken prerequisites into account as well.`,
-  },
-];
-
-
 export default function Chat() {
-  const [messages, setMessages] = useState(dummyMessages);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "system",
+      content: `Hi, I'm CourseGPT, course selection assistant. How can I help you today?`,
+      date: Date.now(),
+    },
+  ]);
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
 
   const addMessage = (msg: Message) => {
-    setMessages((msgs) => [...msgs, msg])
-  }
+    setMessages((msgs) => [
+      ...msgs,
+      {
+        date: Date.now(),
+        ...msg,
+      },
+    ]);
+  };
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [isLoading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setQuery("");
 
     addMessage({
       role: "user",
-      content: query,
-    })
+      content: query.trim(),
+    });
 
     setLoading(true);
 
     try {
       // TODO: 401 unauthorized
-      console.log((session as any).token)
-      const res = await fetch('/api/chat/startjob', {
-        method: 'POST',
+      // console.log((session as any).token)
+      const res = await fetch("/api/chat/startjob", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${(session as any).token}`
+          "Content-Type": "application/json",
+          // Authorization: `Bearer ${(session as any).token}`
         },
         body: JSON.stringify({ chat: query, email: session?.user?.email }),
       });
@@ -63,34 +71,33 @@ export default function Chat() {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const { id } = await res.json()
+      const { id } = await res.json();
 
       const interval = window.setInterval(async () => {
         const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
-          method: 'GET',
-        })
+          method: "GET",
+        });
         if (!res.ok) {
           setLoading(false);
-          console.error("Stopped polling")
-          window.clearInterval(interval)
-          return
+          console.error("Stopped polling");
+          window.clearInterval(interval);
+          return;
         }
 
-        const { data, completed } = await pollRes.json()
+        const { data, completed } = await pollRes.json();
         if (completed) {
           addMessage({
             role: "system",
             content: data,
-          })
+          });
           setLoading(false);
           // clear interval and return
-          window.clearInterval(interval)
-          return
+          window.clearInterval(interval);
+          return;
         }
-      }, 1000)
-
+      }, 1000);
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
@@ -100,51 +107,136 @@ export default function Chat() {
         Chat
       </Typography>
       <Box
-        overflow="scroll"
         border="2px solid #D6D6D6"
         borderRadius="16px"
+        height="80vh"
         display="flex"
         flexDirection="column"
-        gap="2rem"
-        padding="2rem"
-        textAlign="start"
       >
-        {messages.map((message) => {
-          const isUser = message.role === "user";
-          return (
-            <Box
-              display="flex"
-              flexDirection={isUser ? "row-reverse" : "row"}
-              gap="1rem"
-              alignItems="flex-end"
-            >
-              {isUser && (
-                <img
-                  src={pfp}
-                  alt="profile"
-                  width={40}
-                  height={40}
-                  style={{ borderRadius: "50%" }}
-                />
-              )}
-              <Box
-                padding="1rem"
-                bgcolor={isUser ? "#1E87F0" : "grey.200"}
-                color={isUser ? "white" : "#383838"}
-                borderRadius={isUser ? "1rem 1rem 0 1rem" : "1rem 1rem 1rem 0"}
-                maxWidth="60%"
-              >
-                {message.content.trim()}
-              </Box>
-            </Box>
-          );
-        })}
-        {/* TODO: make it look good */}
-        <form onSubmit={handleSubmit}>
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} />
-          <Button type="submit" disabled={isLoading}>Send</Button>
-        </form>
+        <Box
+          overflow="scroll"
+          height="100%"
+          display="flex"
+          flexDirection="column"
+          gap="2rem"
+          padding="2rem"
+          textAlign="start"
+        >
+          {messages.map((message) => (
+            <React.Fragment key={message.date}>
+              <ChatBubble message={message} userPFP={pfp} />
+            </React.Fragment>
+          ))}
+        </Box>
+        {isLoading && <ChatSystemLoadingBubble />}
+        <ChatInput
+          handleSubmit={handleSubmit}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          isLoading={isLoading}
+        />
+      </Box>
+    </Box>
+  );
+}
 
+interface ChatInputProps {
+  handleSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  isLoading: boolean;
+}
+
+function ChatInput({
+  handleSubmit,
+  value,
+  onChange,
+  isLoading,
+}: ChatInputProps) {
+  const formId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+  }, [value]);
+  return (
+    <form
+      onSubmit={handleSubmit}
+      id={formId}
+      style={{ margin: "auto", marginBottom: "1rem" }}
+    >
+      <Box display="flex" alignItems="center" gap="0.5rem">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={onChange}
+          placeholder="Ask CourseGPT..."
+          className={styles.chatInput}
+          form={formId}
+        />
+
+        <IconButton
+          type="submit"
+          disabled={isLoading || !value}
+          color="primary"
+        >
+          <SendIcon />
+        </IconButton>
+      </Box>
+    </form>
+  );
+}
+
+function ChatBubble({
+  message,
+  userPFP,
+}: {
+  message: Message;
+  userPFP: string;
+}) {
+  const isUser = message.role === "user";
+
+  return (
+    <Box
+      display="flex"
+      flexDirection={isUser ? "row-reverse" : "row"}
+      gap="1rem"
+      alignItems="flex-end"
+    >
+      {isUser && (
+        <img
+          src={userPFP}
+          alt="profile"
+          width={40}
+          height={40}
+          style={{ borderRadius: "50%" }}
+        />
+      )}
+      <Box
+        padding="1rem"
+        bgcolor={isUser ? "#1E87F0" : "grey.200"}
+        color={isUser ? "white" : "#383838"}
+        borderRadius={isUser ? "1rem 1rem 0 1rem" : "1rem 1rem 1rem 0"}
+        maxWidth="60%"
+      >
+        {message.content}
+      </Box>
+    </Box>
+  );
+}
+
+function ChatSystemLoadingBubble() {
+  return (
+    <Box display="flex" flexDirection="row" gap="1rem" alignItems="flex-end">
+      <Box
+        padding="1rem"
+        bgcolor="grey.200"
+        color="#383838"
+        borderRadius="1rem 1rem 1rem 0"
+        maxWidth="60%"
+      >
+        <CircularProgress size="1.5rem" />
       </Box>
     </Box>
   );
