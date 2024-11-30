@@ -74,7 +74,7 @@ export default function Chat() {
         const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
           method: "GET",
         });
-        if (!res.ok) {
+        if (!pollRes.ok) {
           window.clearInterval(interval);
           throw new Error(`receiving reply: HTTP ${res.status}`);
         }
