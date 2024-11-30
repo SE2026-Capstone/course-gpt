@@ -1,6 +1,9 @@
+import { PollJobResponse } from "@/schemas/chatPoll";
 import { Box, Button, Input, TextField, Typography } from "@mui/material";
+import { clear } from "console";
 import { useSession } from "next-auth/react";
 import { FormEvent, useRef, useState } from "react";
+import { ZodError } from "zod";
 
 type Message = {
   role: "user" | "system";
@@ -66,27 +69,29 @@ export default function Chat() {
       const { id } = await res.json()
 
       const interval = window.setInterval(async () => {
-        const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
-          method: 'GET',
-        })
-        if (!res.ok) {
-          setLoading(false);
-          console.error("Stopped polling")
-          window.clearInterval(interval)
-          return
-        }
-
-        const { data, completed } = await pollRes.json()
-        if (completed) {
-          addMessage({
-            role: "system",
-            content: data,
+        try {
+          const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
+            method: 'GET',
           })
-          setLoading(false);
-          // clear interval and return
-          window.clearInterval(interval)
-          return
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${pollRes.status}`)
+          }
+
+          const parsedPollResponse = PollJobResponse.parse(await pollRes.json())
+          const { completed, error, result } = parsedPollResponse
+          if (completed && result) {
+            addMessage({
+              role: "system",
+              content: result.chat,
+            })
+          } else {
+            // TODO: handle error
+          }
+        } catch (error: unknown) {
+          console.error("An error occurred, stopped polling:", error)
         }
+        clearInterval(interval)
+        setLoading(false)
       }, 1000)
 
     } catch (error) {
