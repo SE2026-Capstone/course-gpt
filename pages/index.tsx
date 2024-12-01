@@ -4,6 +4,7 @@ import Nav from "@/components/Nav";
 import Chat from "@/components/Chat";
 import CourseList from "@/components/CourseList";
 import { Box, Container } from "@mui/material";
+import { NotificationsProvider } from "@toolpad/core/useNotifications";
 
 export default function Home() {
   const { status } = useSession();
@@ -19,17 +20,19 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Nav />
+      <NotificationsProvider>
+        <Nav />
 
-      <Container>
-        {isAuthenticated && (
-          // TODO: mobile layout: use tabs
-          <Box display="flex" flexDirection="row" gap="2rem">
-            <Chat />
-            <CourseList />
-          </Box>
-        )}
-      </Container>
+        <Container>
+          {isAuthenticated && (
+            // TODO: mobile layout: use tabs
+            <Box display="flex" flexDirection="row" gap="2rem">
+              <Chat />
+              <CourseList />
+            </Box>
+          )}
+        </Container>
+      </NotificationsProvider>
     </>
   );
 }
