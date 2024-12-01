@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]";
 import { chatJobQueue } from "@/bullmq/bullmq";
+import { z, ZodError } from "zod";
+import { BullMQChatJobReturnValue, PollJobResponseInterface } from "@/schemas/chatPoll";
+
 
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -22,19 +23,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (!job) {
       return res.status(400).json({ error: "Invalid job_id" })
     }
+  
     // if (job.data.user_email !== session.user?.email) {
     //   return res.status(403).json({ error: "Job does not belong to the requester" })
     // }
     
     // if the job is completed, return the data
-    let returnData: {
-      data?: string,
-      completed: boolean
-    } = {completed: false}
+    let returnData: PollJobResponseInterface = {
+      completed: false
+    }
 
     if (await job.isCompleted()) {
-      returnData.data = job.returnvalue
-      returnData.completed = true
+      try {
+        const parsedReturnValue = BullMQChatJobReturnValue.parse(job.returnvalue)
+        returnData.result = parsedReturnValue
+        returnData.completed = true
+      } catch (error: unknown) {
+        if (error instanceof ZodError) {
+          returnData.error = error?.message ?? "Invalid job response"
+        } else {
+          returnData.error = "Invalid job response"
+        }
+      }
     }
     return res.status(200).json(returnData)
 

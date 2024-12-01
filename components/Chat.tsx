@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import styles from "./Chat.module.css";
 import SendIcon from "@mui/icons-material/Send";
 import { useNotifications } from "@toolpad/core/useNotifications";
+import { PollJobResponse } from "@/schemas/chatPoll";
 
 type Message = {
   role: "user" | "system";
@@ -65,35 +66,45 @@ export default function Chat() {
       });
 
       if (!res.ok) {
-        throw new Error(`sending message: HTTP ${res.status}`);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       const { id } = await res.json();
 
       const interval = window.setInterval(async () => {
-        const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
-          method: "GET",
-        });
-        if (!pollRes.ok) {
-          window.clearInterval(interval);
-          throw new Error(`receiving reply: HTTP ${res.status}`);
-        }
-
-        const { data, completed } = await pollRes.json();
-        if (completed) {
-          addMessage({
-            role: "system",
-            content: data,
+        try {
+          const pollRes = await fetch(`/api/chat/poll?job_id=${id}`, {
+            method: "GET",
           });
+          if (!pollRes.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+  
+          const { completed, error, result } = PollJobResponse.parse(await pollRes.json());
+          if (completed && result) {
+            addMessage({
+              role: "system",
+              content: result.chat,
+            });
+            window.clearInterval(interval);
+            setLoading(false);
+            return;
+          } else if (error) {
+            throw new Error(`Invalid reply from server. ${error}`);
+          }
+        } catch (e) {
+          const message = (e as any)?.message || "Unknown error";
+          notifications.show(
+            `Couldn't get reply. Please try again. Error: ${message}`
+          );
           window.clearInterval(interval);
           setLoading(false);
-          return;
         }
       }, 1000);
     } catch (error) {
       const message = (error as any)?.message || "Unknown error";
       notifications.show(
-        `Something went wrong, please try again. Error: ${message}`
+        `Couldn't send message, please try again. Error: ${message}`
       );
       setLoading(false);
     }

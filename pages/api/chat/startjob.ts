@@ -4,13 +4,8 @@ import { NextApiRequest, NextApiResponse } from "next"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "../auth/[...nextauth]"
 import { chatJobQueue } from "@/bullmq/bullmq"
+import { ChatJobRequest } from "@/schemas/chatStartJob"
 
-
-
-const ChatJobRequest = z.object({
-	email: z.string(),
-	chat: z.string()
-})
 
 const handler = (async (
 	req: NextApiRequest,
