@@ -5,10 +5,15 @@ import Chat from "@/components/Chat";
 import CourseList from "@/components/CourseList";
 import { Box, Container } from "@mui/material";
 import { NotificationsProvider } from "@toolpad/core/useNotifications";
+import { useState } from "react";
+import { CourseListItemInterface } from "@/schemas/chatPoll";
 
 export default function Home() {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+
+  const [courses, setCourses] = useState<CourseListItemInterface[]>([]);
+
   return (
     <>
       <Head>
@@ -26,8 +31,13 @@ export default function Home() {
         <Container>
           {isAuthenticated && (
             // TODO: mobile layout: use tabs
-            <Box display="flex" flexDirection="row" gap="2rem">
-              <Chat />
+            <Box display="flex" flexDirection="row" gap="2rem" alignItems="flex-start">
+              <Box flex={1}>
+                <Chat setCourses={setCourses} />
+              </Box>
+              <Box flex={1}>
+                <CourseList courses={courses} />
+              </Box>
             </Box>
           )}
         </Container>
