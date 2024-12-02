@@ -28,7 +28,6 @@ export default function Home() {
             // TODO: mobile layout: use tabs
             <Box display="flex" flexDirection="row" gap="2rem">
               <Chat />
-              <CourseList />
             </Box>
           )}
         </Container>

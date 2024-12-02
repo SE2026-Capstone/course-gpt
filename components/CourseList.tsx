@@ -1,4 +1,5 @@
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Link } from "@mui/material";
+import CircularProgressBar from "./CircularProgressBar";
 
 type Course = {
   courseCode: string;
@@ -7,9 +8,9 @@ type Course = {
   similarityScore: number;
 };
 
+export const generateUWFlowLink = (courseCode: string) => `https://uwflow.com/course/${courseCode.toLowerCase()}`;
+
 export default function CourseList({ courses }: { courses: Course[] }) {
-  const generateUWFlowLink = (courseCode: string) =>
-    `https://uwflow.com/course/${courseCode.toLowerCase()}`;
 
   return (
     <Box width="100%" textAlign="center">
@@ -40,19 +41,51 @@ export default function CourseList({ courses }: { courses: Course[] }) {
                 <Typography variant="body1">{course.courseName}</Typography>
               </Box>
               <Box>
-                <Button
-                  variant="contained"
+                <Link
+                  href={generateUWFlowLink(course.courseCode)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   color="primary"
-                  onClick={() => window.open(generateUWFlowLink(course.courseCode), "_blank")}
+                  underline="hover"
+                  sx={{ fontWeight: "bold" }}
                 >
                   View on UW Flow
-                </Button>
+                </Link>
+              </Box>
+              <Box display="flex" gap="0.5rem">
+                <CircularStat
+                  percentage={course.similarityScore}
+                  text="Similarity"
+                />
               </Box>
             </Box>
             <Typography variant="body2">{course.courseDescription}</Typography>
           </Box>
         ))}
       </Box>
+    </Box>
+  );
+}
+
+function CircularStat({
+  percentage,
+  text,
+}: {
+  percentage: number;
+  text: string;
+}) {
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      gap="2px"
+      alignItems="center"
+      width="min-content"
+    >
+      <CircularProgressBar percentage={percentage} />
+      <Typography fontWeight={500} fontSize="12px">
+        {text}
+      </Typography>
     </Box>
   );
 }
