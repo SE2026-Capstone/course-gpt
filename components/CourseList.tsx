@@ -1,39 +1,17 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Link } from "@mui/material";
 import CircularProgressBar from "./CircularProgressBar";
 
 type Course = {
-  name: string;
-  title: string;
-  description: string;
-  // TODO
-  link?: string;
-  // number from 0 to 100
-  similarity: number;
-  easy: number;
-  useful: number;
+  courseCode: string;
+  courseName: string;
+  courseDescription: string;
+  similarityScore: number;
 };
 
-const dummyCourses: Course[] = [
-  {
-    name: "CS 480",
-    title: "Introduction to Machine Learning",
-    description: `CS 480 provides an introduction to modeling and algorithmic techniques for machines to learn concepts from data.`,
-    similarity: 98,
-    easy: 70,
-    useful: 45,
-  },
-  {
-    name: "CS 486",
-    title: "Introduction to Artificial Intelligence",
-    description: `Goals and methods of artificial intelligence. Methods of general problem solving. Knowledge representation and reasoning. Planning. Reasoning about uncertainty. Machine learning. Multi-agent systems. Natural language processing.`,
-    similarity: 96,
-    easy: 50,
-    useful: 86,
-  },
-];
+export const generateUWFlowLink = (courseCode: string) => `https://uwflow.com/course/${courseCode.toLowerCase()}`;
 
-export default function CourseList() {
-  const courses = dummyCourses;
+export default function CourseList({ courses }: { courses: Course[] }) {
+
   return (
     <Box width="100%" textAlign="center">
       <Typography my="1rem" variant="h4">
@@ -50,28 +28,40 @@ export default function CourseList() {
         padding="2rem"
         textAlign="start"
       >
-        {courses.map((course) => {
-          return (
-            <Box key={course.name} borderRadius="1rem" bgcolor="grey.200" padding="1rem">
-              <Box display="flex" mb="1rem">
-                <Box flexGrow={1}>
-                  <Typography variant="h6">{course.name}</Typography>
-                  <Typography variant="body1">{course.title}</Typography>
-                </Box>
-                <Box display="flex" gap="0.5rem">
-                  <CircularStat
-                    percentage={course.similarity}
-                    text="Similarity"
-                  />
-                  <CircularStat percentage={course.easy} text="Easy" />
-                  <CircularStat percentage={course.useful} text="Useful" />
-                </Box>
+        {courses?.map((course) => (
+          <Box
+            key={course.courseCode}
+            borderRadius="1rem"
+            bgcolor="grey.200"
+            padding="1rem"
+          >
+            <Box display="flex" mb="1rem">
+              <Box flexGrow={1}>
+                <Typography variant="h6">{course.courseCode}</Typography>
+                <Typography variant="body1">{course.courseName}</Typography>
               </Box>
-
-              <Typography variant="body2">{course.description}</Typography>
+              <Box>
+                <Link
+                  href={generateUWFlowLink(course.courseCode)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="primary"
+                  underline="hover"
+                  sx={{ fontWeight: "bold" }}
+                >
+                  View on UW Flow
+                </Link>
+              </Box>
+              <Box display="flex" gap="0.5rem">
+                <CircularStat
+                  percentage={course.similarityScore}
+                  text="Similarity"
+                />
+              </Box>
             </Box>
-          );
-        })}
+            <Typography variant="body2">{course.courseDescription}</Typography>
+          </Box>
+        ))}
       </Box>
     </Box>
   );
