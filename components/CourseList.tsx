@@ -1,13 +1,16 @@
+import { Box, Typography, Button } from "@mui/material";
+
 type Course = {
   courseCode: string;
   courseName: string;
   courseDescription: string;
   similarityScore: number;
-  easyRating: number;
-  usefulRating: number;
 };
 
 export default function CourseList({ courses }: { courses: Course[] }) {
+  const generateUWFlowLink = (courseCode: string) =>
+    `https://uwflow.com/course/${courseCode.toLowerCase()}`;
+
   return (
     <Box width="100%" textAlign="center">
       <Typography my="1rem" variant="h4">
@@ -24,7 +27,7 @@ export default function CourseList({ courses }: { courses: Course[] }) {
         padding="2rem"
         textAlign="start"
       >
-        {courses.map((course) => (
+        {courses?.map((course) => (
           <Box
             key={course.courseCode}
             borderRadius="1rem"
@@ -36,42 +39,20 @@ export default function CourseList({ courses }: { courses: Course[] }) {
                 <Typography variant="h6">{course.courseCode}</Typography>
                 <Typography variant="body1">{course.courseName}</Typography>
               </Box>
-              <Box display="flex" gap="0.5rem">
-                <CircularStat
-                  percentage={course.similarityScore}
-                  text="Similarity"
-                />
-                <CircularStat percentage={course.easyRating} text="Easy" />
-                <CircularStat percentage={course.usefulRating} text="Useful" />
+              <Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => window.open(generateUWFlowLink(course.courseCode), "_blank")}
+                >
+                  View on UW Flow
+                </Button>
               </Box>
             </Box>
             <Typography variant="body2">{course.courseDescription}</Typography>
           </Box>
         ))}
       </Box>
-    </Box>
-  );
-}
-
-function CircularStat({
-  percentage,
-  text,
-}: {
-  percentage: number;
-  text: string;
-}) {
-  return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      gap="2px"
-      alignItems="center"
-      width="min-content"
-    >
-      <CircularProgressBar percentage={percentage} />
-      <Typography fontWeight={500} fontSize="12px">
-        {text}
-      </Typography>
     </Box>
   );
 }

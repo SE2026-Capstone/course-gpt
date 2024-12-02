@@ -6,6 +6,7 @@ import styles from "./Chat.module.css";
 import SendIcon from "@mui/icons-material/Send";
 import { useNotifications } from "@toolpad/core/useNotifications";
 import { PollJobResponse } from "@/schemas/chatPoll";
+import CourseList from "@/components/CourseList";
 
 type Message = {
   role: "user" | "system";
@@ -94,8 +95,6 @@ export default function Chat() {
               courseName: course.name,
               courseDescription: course.description,
               similarityScore: course.similarity,
-              easyRating: course.easy,
-              usefulRating: course.useful,
             }));
 
             setCourses(parsedCourses);
