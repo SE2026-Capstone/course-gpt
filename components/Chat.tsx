@@ -15,7 +15,11 @@ type Message = {
   date?: number; // Date.now()
 };
 
-export default function Chat() {
+interface ChatProps {
+  setCourses: React.Dispatch<React.SetStateAction<CourseListItemInterface[]>>;
+}
+
+export default function Chat({ setCourses }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "system",
@@ -26,7 +30,6 @@ export default function Chat() {
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
   const messageContainer = useRef<HTMLDivElement>(null);
-  const [courses, setCourses] = useState<CourseListItemInterface[]>([]);
 
   const addMessage = (msg: Message) => {
     setMessages((msgs) => [
@@ -158,9 +161,6 @@ export default function Chat() {
           isLoading={isLoading}
         />
       </Box>
-
-      {/* Course List */}
-      <CourseList courses={courses} />
     </Box>
   );
 }
