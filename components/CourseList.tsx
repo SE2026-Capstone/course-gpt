@@ -1,16 +1,13 @@
 import { Box, Typography, Link } from "@mui/material";
 import CircularProgressBar from "./CircularProgressBar";
+import { CourseListItemInterface } from "@/schemas/chatPoll";
 
-type Course = {
-  courseCode: string;
-  courseName: string;
-  courseDescription: string;
-  similarityScore: number;
-};
 
-export const generateUWFlowLink = (courseCode: string) => `https://uwflow.com/course/${courseCode.toLowerCase()}`;
+export const generateUWFlowLink = (courseCode: string) => (
+  `https://uwflow.com/course/${courseCode.toLowerCase().replaceAll(" ", "")}`
+)
 
-export default function CourseList({ courses }: { courses: Course[] }) {
+export default function CourseList({ courses }: { courses: CourseListItemInterface[] }) {
 
   return (
     <Box width="100%" textAlign="center">
@@ -54,7 +51,7 @@ export default function CourseList({ courses }: { courses: Course[] }) {
               </Box>
               <Box display="flex" gap="0.5rem">
                 <CircularStat
-                  percentage={course.similarityScore}
+                  percentage={Math.round(course.relevanceScore * 100)}
                   text="Similarity"
                 />
               </Box>

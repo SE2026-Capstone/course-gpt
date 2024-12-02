@@ -5,8 +5,9 @@ import { useRef, useState } from "react";
 import styles from "./Chat.module.css";
 import SendIcon from "@mui/icons-material/Send";
 import { useNotifications } from "@toolpad/core/useNotifications";
-import { PollJobResponse } from "@/schemas/chatPoll";
+import { CourseListItemInterface, PollJobResponse } from "@/schemas/chatPoll";
 import CourseList from "@/components/CourseList";
+import { ZodError } from "zod";
 
 type Message = {
   role: "user" | "system";
@@ -25,7 +26,7 @@ export default function Chat() {
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
   const messageContainer = useRef<HTMLDivElement>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseListItemInterface[]>([]);
 
   const addMessage = (msg: Message) => {
     setMessages((msgs) => [
@@ -86,29 +87,27 @@ export default function Chat() {
           if (completed && result) {
             addMessage({
               role: "system",
-              content: "Here are some course recommendations.",
+              content: result.chat,
             });
 
-            // Parse courses from the response and update the state
-            const parsedCourses: Course[] = result.courses.map((course: any) => ({
-              courseCode: course.code,
-              courseName: course.name,
-              courseDescription: course.description,
-              similarityScore: course.similarity,
-            }));
-
-            setCourses(parsedCourses);
+            setCourses(result.courseList);
             window.clearInterval(interval);
             setLoading(false);
             return;
           } else if (error) {
-            throw new Error(`Invalid reply from server. ${error}`);
+            throw error;
           }
-        } catch (e) {
-          const message = (e as any)?.message || "Unknown error";
-          notifications.show(
-            `Couldn't get reply. Please try again. Error: ${message}`
-          );
+        } catch (e: unknown) {
+          if (e instanceof ZodError) {
+            notifications.show(
+              `The server response did not match the expected Zod format: ${e.message}`
+            );
+          } else {
+            const message = (e as any)?.message || "Unknown error";
+            notifications.show(
+              `Couldn't get reply. Please try again. Error: ${message}`
+            );
+          }
           window.clearInterval(interval);
           setLoading(false);
         }

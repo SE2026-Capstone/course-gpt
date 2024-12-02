@@ -34,10 +34,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (await job.isCompleted()) {
+      returnData.completed = true
       try {
         const parsedReturnValue = BullMQChatJobReturnValue.parse(job.returnvalue)
         returnData.result = parsedReturnValue
-        returnData.completed = true
       } catch (error: unknown) {
         if (error instanceof ZodError) {
           returnData.error = error?.message ?? "Invalid job response"
