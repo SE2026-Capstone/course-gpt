@@ -24,6 +24,7 @@ export default function Chat() {
   const { data: session } = useSession();
   const pfp = session?.user?.image ?? "";
   const messageContainer = useRef<HTMLDivElement>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const addMessage = (msg: Message) => {
     setMessages((msgs) => [
@@ -84,8 +85,20 @@ export default function Chat() {
           if (completed && result) {
             addMessage({
               role: "system",
-              content: result.chat,
+              content: "Here are some course recommendations.",
             });
+
+            // Parse courses from the response and update the state
+            const parsedCourses: Course[] = result.courses.map((course: any) => ({
+              courseCode: course.code,
+              courseName: course.name,
+              courseDescription: course.description,
+              similarityScore: course.similarity,
+              easyRating: course.easy,
+              usefulRating: course.useful,
+            }));
+
+            setCourses(parsedCourses);
             window.clearInterval(interval);
             setLoading(false);
             return;
@@ -119,7 +132,7 @@ export default function Chat() {
         boxSizing="border-box"
         border="2px solid #D6D6D6"
         borderRadius="16px"
-        height="80vh"
+        height="50vh"
         display="flex"
         flexDirection="column"
       >
@@ -147,6 +160,9 @@ export default function Chat() {
           isLoading={isLoading}
         />
       </Box>
+
+      {/* Course List */}
+      <CourseList courses={courses} />
     </Box>
   );
 }
